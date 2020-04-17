@@ -28,18 +28,16 @@ namespace dtc.api.Controllers
         {
             if (playlist.Songs.Count != 0)
             {
-                var nowDatetime = DateTime.Now;
                 var diff = DateTime.Now - startDateTime;
-                var now = nowDatetime.Hour * 3600 + nowDatetime.Minute * 60 + nowDatetime.Second;
-                var start = startDateTime.Hour * 3600 + startDateTime.Minute * 60 + startDateTime.Second;
+                var diffInSeconds = diff.Hours * 3600 + diff.Minutes * 60 + diff.Seconds;
                 int i = 0;
-                while (start <= now)
+                while (diffInSeconds > 0 && i< playlist.Songs.Count)
                 {
-                    start += playlist.Songs[i].Length;
+                    diffInSeconds -= playlist.Songs[i].Length;
                     i++;
                 }
                 playlist.CurrentSong = playlist.Songs[i-1];
-                playlist.CurrentTime = playlist.CurrentSong.Length - (start - now);
+                playlist.CurrentTime = playlist.CurrentSong.Length + diffInSeconds;
             }
             return Ok(playlist);
         }

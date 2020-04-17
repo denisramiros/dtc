@@ -11,7 +11,6 @@ import { Playlist } from './model/playlist.interface';
 export class AppComponent implements OnInit {
     title = 'mt';
     public playlist: Playlist;
-    public newSongUrl: string;
 
     public constructor(private playlistService: PlaylistService) {}
 
@@ -31,6 +30,16 @@ export class AppComponent implements OnInit {
     }
 
     public onAddClick(): void {
-        this.playlistService.addSong({ url: this.newSongUrl, length: (Math.floor(Math.random() * 3) + 1) * 60 }).subscribe(r => {});
+        this.playlistService.addSong({ url: Guid.newGuid(), length: (Math.floor(Math.random() * 3) + 1) * 60 }).subscribe(r => {});
+    }
+}
+
+class Guid {
+    static newGuid() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = (Math.random() * 16) | 0,
+                v = c == 'x' ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+        });
     }
 }
