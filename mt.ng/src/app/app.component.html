@@ -1,22 +1,23 @@
-<button (click)="onAddClick()">Add new Song</button>
-<button (click)="onRefreshClick()">Refrech table</button>
-<button (click)="onDeleteClick()">delete table</button>
-<table>
-    <thead>
-        <tr>
-            <th>Url</th>
-            <th>Lengt</th>
-            <th>Current song</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr *ngFor="let song of playlist?.songs">
-            <td>{{ song?.url }}</td>
-            <td>{{ song?.length }}</td>
-            <td>
-                <ng-container *ngIf="song?.url === playlist?.currentSong?.url">< {{ playlist?.currentTime }}</ng-container>
-                <ng-container *ngIf="song?.url !== playlist?.currentSong?.url"></ng-container>
-            </td>
-        </tr>
-    </tbody>
-</table>
+<div class="container">
+    <youtube-player #player [videoId]="currentSong?.url" (ready)="onPlayerReady()"></youtube-player>
+    <div class="playlist">
+        <h2>Playlist</h2>
+        <input type="text" #newItem />
+        <button (click)="onAddClick(newItem.value)">Add new Song</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>Url</th>
+                    <th>Length</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let song of songs">
+                    <td>{{ song?.url }}</td>
+                    <td>{{ song?.length }}</td>
+                    <td><button (click)="onDeleteClick(song.key)">Delete</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

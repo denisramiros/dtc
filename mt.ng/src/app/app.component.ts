@@ -1,45 +1,53 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { PlaylistService } from './service/playlist.service';
 import { Song } from './model/song.interface';
 import { Playlist } from './model/playlist.interface';
+import { YouTubePlayer } from '@angular/youtube-player';
+import { viewClassName } from '@angular/compiler';
 
 @Component({
     selector: 'mt-root',
     templateUrl: './app.component.html',
-    styleUrls: ['./app.component.scss']
+    styleUrls: ['./app.component.scss'],
 })
 export class AppComponent implements OnInit {
-    title = 'mt';
-    public playlist: Playlist;
+    public songs: Song[] = [];
+    public playerVars;
+
+    public get currentSong(): Song {
+        return this.songs[0];
+    }
+
+    @ViewChild('newItem') public input: ElementRef;
+    @ViewChild('player') public player: any;
 
     public constructor(private playlistService: PlaylistService) {}
 
     public ngOnInit() {
-        this.onRefreshClick();
-    }
-
-    public onRefreshClick(): void {
         this.playlistService.getPlaylist().subscribe(pl => {
-            console.log('retreived playlist', pl);
-            this.playlist = pl;
+            this.songs = pl;
         });
     }
 
-    public onDeleteClick(): void {
-        this.playlistService.deletePlaylist().subscribe(r => {});
+    public onPlayerReady(): void {
+        // this.player.playerVars = {
+        //     autoplay: 1,
+        //     controls: 0,
+        // };
+
+        this.player.playVideo();
     }
 
-    public onAddClick(): void {
-        this.playlistService.addSong({ url: Guid.newGuid(), length: (Math.floor(Math.random() * 3) + 1) * 60 }).subscribe(r => {});
+    public onDeleteClick(key: string): void {
+        this.playlistService.deleteSong(key);
     }
-}
 
-class Guid {
-    static newGuid() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            const r = (Math.random() * 16) | 0,
-                v = c == 'x' ? r : (r & 0x3) | 0x8;
-            return v.toString(16);
-        });
+    public onAddClick(url: string): void {
+        if (!url || url.length === 0) {
+            return;
+        }
+        this.input.nativeElement.value = '';
+        url = url.match(/[A-Za-z0-9_\-]{11}/)[0];
+        this.playlistService.addSong({ url, length: (Math.floor(Math.random() * 3) + 1) * 60 } as Song).subscribe(r => {});
     }
 }

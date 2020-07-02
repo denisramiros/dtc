@@ -395,3 +395,4 @@ MigrationBackup/
 
 # End of https://www.gitignore.io/api/angular,visualstudio,visualstudiocode
 mt.ng/package-lock.json
+mt.ng/src/environments/environment.ts
