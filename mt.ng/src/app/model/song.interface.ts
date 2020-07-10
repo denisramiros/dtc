@@ -1,5 +1,6 @@
 export interface Song {
     key: string;
-    url: string;
+    id: string;
     length: number;
+    added: any;
 }

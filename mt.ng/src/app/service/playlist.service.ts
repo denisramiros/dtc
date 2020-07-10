@@ -1,10 +1,11 @@
-import { RequestService } from './request.service';
 import { Injectable } from '@angular/core';
-import { Observable, NEVER } from 'rxjs';
-import { Song } from '../model/song.interface';
-import { Playlist } from '../model/playlist.interface';
 import { AngularFireDatabase, AngularFireList } from '@angular/fire/database';
+import * as moment from 'moment';
+import { NEVER, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { environment } from 'src/environments/environment';
+import { Song } from '../model/song.interface';
+import { RequestService } from './request.service';
 
 @Injectable({
     providedIn: 'root',
@@ -23,8 +24,19 @@ export class PlaylistService {
     public getPlaylist(): Observable<Song[]> {
         const list = this.listRef
             .snapshotChanges()
-            .pipe(map(changes => changes.map(c => ({ key: c.payload.key, ...c.payload.val() } as Song))));
+            .pipe(
+                map(changes =>
+                    changes.map(c => ({ key: c.payload.key, ...c.payload.val(), added: new Date(c.payload.val().added) } as Song))
+                )
+            );
         return list;
+    }
+
+    public getDurationOfSong(id: string) {
+        const s = this.requestService.getRequest<any>(
+            `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${id}&key=${environment.youtubeKey}`
+        );
+        return s.pipe(map(o => moment.duration(o.items[0].contentDetails.duration).asSeconds()));
     }
 
     public deleteSong(key: string): void {
