@@ -113,7 +113,7 @@ export class AppComponent implements OnInit, OnDestroy {
     public onDeleteClick(key: string): void {
         this.currentSongIndex++;
         if (this.currentSong) {
-            this.playerIframe.loadVideoById(this.currentSong.id, this.currentSongStartSeconds);
+            this.playerIframe.loadVideoById(this.currentSong.id, 0);
         } else {
             this.playerIframe.pauseVideo();
         }
