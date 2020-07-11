@@ -1,5 +1,12 @@
 <div class="container">
-    <youtube-player #player [videoId]="currentSong?.id" [startSeconds]="currentSongStartSeconds" (ready)="onPlayerReady()"></youtube-player>
+    <youtube-player
+        #player
+        [videoId]="currentSong?.id"
+        [startSeconds]="currentSongStartSeconds"
+        (ready)="onPlayerReady()"
+        (stateChange)="onPlayerStateChange($event)"
+    ></youtube-player>
+    <div id="player"></div>
     <div class="playlist">
         <h2>Playlist</h2>
         <input type="text" #newItem />
