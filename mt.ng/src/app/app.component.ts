@@ -105,7 +105,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     public onPlayerReady(): void {
-        this.playerIframe.mute();
         this.loadCurrentSong();
     }
 
