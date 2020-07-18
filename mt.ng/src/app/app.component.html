@@ -8,12 +8,14 @@
             <thead>
                 <tr>
                     <th>id</th>
+                    <th>Added</th>
                     <th>Length</th>
                 </tr>
             </thead>
             <tbody>
                 <tr *ngFor="let song of songs">
                     <td>{{ song?.id }}</td>
+                    <td>{{ song?.added | date: 'd/M/y H:mm:ss' }}</td>
                     <td>{{ song?.length }}</td>
                     <td><button (click)="onDeleteClick(song.key)">Delete</button></td>
                     <td *ngIf="song?.id === currentSong?.id">< Playing</td>
