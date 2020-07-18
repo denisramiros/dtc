@@ -70,7 +70,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     private calcCurrentSong(): void {
         if (!this.songs || this.songs.length === 0) {
             this.lastCurrentSong = _.cloneDeep(this.currentSong);
-            // this.currentSongIndex = -1;
             this.currentSong = null;
             return;
         }
@@ -90,9 +89,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
             }
             i++;
         }
+        this.lastCurrentSong = _.cloneDeep(this.currentSong);
 
         if (diff > 0) {
-            this.lastCurrentSong = _.cloneDeep(this.currentSong);
             this.currentSong = null;
             this.currentSongStartSeconds = 0;
         } else if (diff === 0) {
@@ -100,12 +99,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
             this.currentSongStartSeconds = 0;
         } else if (diff < 0) {
             i--;
-            if (this.songs[i]?.id != this.currentSong?.id) {
-                this.lastCurrentSong = _.cloneDeep(this.currentSong);
-                this.currentSongStartSeconds = 0;
-            } else {
-                this.currentSongStartSeconds = this.songs[i].length + diff;
-            }
+            this.currentSongStartSeconds = this.songs[i].length + diff;
             this.currentSong = this.songs[i];
         }
     }
@@ -136,14 +130,19 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         }
         this.input.nativeElement.value = '';
         const id = this.getIdFromUrl(url);
-        this.playlistService
-            .getDurationOfSong(id)
-            .pipe(takeUntil(this.unsubscribe))
-            .subscribe(l => this.playlistService.addSong({ id, length: l, added: new Date().toString() } as Song));
+        if (!this.songs.some(s => s.id === id)) {
+            this.playlistService
+                .getDurationOfSong(id)
+                .pipe(takeUntil(this.unsubscribe))
+                .subscribe(l => this.playlistService.addSong({ id, length: l, added: new Date().toString() } as Song));
+        }
     }
 
     private loadCurrentSong(): void {
-        if (this.getIdFromUrl(this.playerIframe.getVideoUrl()) !== this.currentSong?.id) {
+        if (
+            this.getIdFromUrl(this.playerIframe.getVideoUrl()) !== this.currentSong?.id ||
+            (this.getIdFromUrl(this.playerIframe.getVideoUrl()) === this.currentSong?.id && this.lastCurrentSong == null)
+        ) {
             if (this.currentSong) {
                 this.playerIframe.loadVideoById(this.currentSong?.id, this.currentSongStartSeconds);
             } else {
@@ -159,7 +158,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     private getIdFromUrl(url: string): string {
-        return url.match(/[A-Za-z0-9_\-]{11}/)[0];
+        return url?.match(/[A-Za-z0-9_\-]{11}/)[0];
     }
 
     public ngOnDestroy() {
