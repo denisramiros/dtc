@@ -1,30 +1,34 @@
-import { Component, ElementRef, OnInit, ViewChild, OnDestroy } from '@angular/core';
-import { Song } from './model/song.interface';
-import { PlaylistService } from './service/playlist.service';
-import { YouTubePlayer } from '@angular/youtube-player';
+import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { Song } from './model/song.interface';
+import { PlaylistService } from './service/playlist.service';
+import * as _ from 'lodash';
 
 @Component({
     selector: 'mt-root',
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.scss'],
 })
-export class AppComponent implements OnInit, OnDestroy {
+export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     private unsubscribe = new Subject<boolean>();
     private lastState: number;
+    private lastCurrentSong: Song;
+    private firstTime = true;
+
+    private _currentSongStartSeconds = 0;
 
     public songs: Song[] = [];
-    public currentSongIndex = 0;
-    public currentSongStartSeconds = 0;
+    public currentSong: Song;
     public playerIframe: YT.Player;
-
-    public get currentSong(): Song {
-        return this.songs && this.songs.length > this.currentSongIndex ? this.songs[this.currentSongIndex] : null;
+    public set currentSongStartSeconds(seconds: number) {
+        this._currentSongStartSeconds = seconds;
+    }
+    public get currentSongStartSeconds() {
+        return Math.floor(this._currentSongStartSeconds);
     }
 
     @ViewChild('newItem') public input: ElementRef;
-    @ViewChild('player') public player: YouTubePlayer;
 
     public constructor(private playlistService: PlaylistService) {}
 
@@ -33,19 +37,25 @@ export class AppComponent implements OnInit, OnDestroy {
             this.startVideo();
         }
         window.onYouTubeIframeAPIReady = () => this.startVideo();
+    }
 
+    public ngAfterViewInit() {
         this.playlistService
             .getPlaylist()
             .pipe(takeUntil(this.unsubscribe))
             .subscribe(pl => {
                 this.songs = pl;
                 this.calcCurrentSong();
+                if (!this.firstTime) {
+                    this.loadCurrentSong();
+                }
+                this.firstTime = false;
             });
     }
 
     private startVideo(): void {
         this.playerIframe = new window.YT.Player('player', {
-            videoId: 'lrrXRv6s-C4',
+            videoId: 'dQw4w9WgXcQ',
             playerVars: {
                 autoplay: 0,
                 controls: 1,
@@ -57,8 +67,11 @@ export class AppComponent implements OnInit, OnDestroy {
         });
     }
 
-    public calcCurrentSong(): void {
+    private calcCurrentSong(): void {
         if (!this.songs || this.songs.length === 0) {
+            this.lastCurrentSong = _.cloneDeep(this.currentSong);
+            // this.currentSongIndex = -1;
+            this.currentSong = null;
             return;
         }
         const now = new Date();
@@ -79,31 +92,34 @@ export class AppComponent implements OnInit, OnDestroy {
         }
 
         if (diff > 0) {
-            this.currentSongIndex = this.songs.length;
+            this.lastCurrentSong = _.cloneDeep(this.currentSong);
+            this.currentSong = null;
             this.currentSongStartSeconds = 0;
         } else if (diff === 0) {
-            this.currentSongIndex = i;
+            this.currentSong = this.songs[i];
             this.currentSongStartSeconds = 0;
         } else if (diff < 0) {
-            this.currentSongIndex = --i;
-            this.currentSongStartSeconds = this.songs[i].length + diff;
+            i--;
+            if (this.songs[i]?.id != this.currentSong?.id) {
+                this.lastCurrentSong = _.cloneDeep(this.currentSong);
+                this.currentSongStartSeconds = 0;
+            } else {
+                this.currentSongStartSeconds = this.songs[i].length + diff;
+            }
+            this.currentSong = this.songs[i];
         }
     }
 
-    public onPlayerReady(event?: any): void {
-        this.calcCurrentSong();
-        if (this.currentSong) {
-            this.playerIframe.loadVideoById(this.currentSong.id, this.currentSongStartSeconds);
-        } else {
-            this.playerIframe.pauseVideo();
-        }
+    public onPlayerReady(): void {
+        this.playerIframe.mute();
+        this.loadCurrentSong();
     }
 
     public onPlayerStateChange(event: any): void {
-        if (event.data === 0) {
+        if (event.data === YT.PlayerState.ENDED) {
             this.calcCurrentSong();
-            this.playerIframe.loadVideoById(this.currentSong.id, this.currentSongStartSeconds);
-        } else if (event.data === 1 && this.lastState === 2) {
+            this.playerIframe.loadVideoById(this.currentSong?.id, 0);
+        } else if (event.data === YT.PlayerState.PLAYING && this.lastState === YT.PlayerState.PAUSED) {
             this.calcCurrentSong();
             this.playerIframe.seekTo(this.currentSongStartSeconds, true);
         }
@@ -111,31 +127,39 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     public onDeleteClick(key: string): void {
-        this.currentSongIndex++;
-        if (this.currentSong) {
-            this.playerIframe.loadVideoById(this.currentSong.id, 0);
-        } else {
-            this.playerIframe.pauseVideo();
-        }
         this.playlistService.deleteSong(key);
     }
 
-    public onAddClick(id: string): void {
-        if (!id || id.length === 0) {
+    public onAddClick(url: string): void {
+        if (!url || url.length === 0) {
             return;
         }
         this.input.nativeElement.value = '';
-        id = id.match(/[A-Za-z0-9_\-]{11}/)[0];
+        const id = this.getIdFromUrl(url);
         this.playlistService
             .getDurationOfSong(id)
             .pipe(takeUntil(this.unsubscribe))
             .subscribe(l => this.playlistService.addSong({ id, length: l, added: new Date().toString() } as Song));
     }
 
+    private loadCurrentSong(): void {
+        if (this.getIdFromUrl(this.playerIframe.getVideoUrl()) !== this.currentSong?.id) {
+            if (this.currentSong) {
+                this.playerIframe.loadVideoById(this.currentSong?.id, this.currentSongStartSeconds);
+            } else {
+                this.playerIframe.pauseVideo();
+            }
+        }
+    }
+
     private addSeconds(date: Date, seconds: number): Date {
         const d = new Date(date.getTime());
         d.setSeconds(date.getSeconds() + seconds);
         return d;
+    }
+
+    private getIdFromUrl(url: string): string {
+        return url.match(/[A-Za-z0-9_\-]{11}/)[0];
     }
 
     public ngOnDestroy() {

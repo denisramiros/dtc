@@ -1,15 +1,8 @@
 <div class="container">
-    <youtube-player
-        #player
-        [videoId]="currentSong?.id"
-        [startSeconds]="currentSongStartSeconds"
-        (ready)="onPlayerReady()"
-        (stateChange)="onPlayerStateChange($event)"
-    ></youtube-player>
     <div id="player"></div>
     <div class="playlist">
         <h2>Playlist</h2>
-        <input type="text" #newItem />
+        <input type="text" #newItem (keydown.enter)="onAddClick(newItem.value)" />
         <button (click)="onAddClick(newItem.value)">Add new Song</button>
         <table>
             <thead>
@@ -19,11 +12,11 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let song of songs; let index = index">
+                <tr *ngFor="let song of songs">
                     <td>{{ song?.id }}</td>
                     <td>{{ song?.length }}</td>
                     <td><button (click)="onDeleteClick(song.key)">Delete</button></td>
-                    <td *ngIf="index === currentSongIndex">< Playing</td>
+                    <td *ngIf="song?.id === currentSong?.id">< Playing</td>
                 </tr>
             </tbody>
         </table>
