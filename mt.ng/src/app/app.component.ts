@@ -99,7 +99,12 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
             this.currentSongStartSeconds = 0;
         } else if (diff < 0) {
             i--;
-            this.currentSongStartSeconds = this.songs[i].length + diff;
+            if (this.songs[i]?.id != this.currentSong?.id) {
+                this.lastCurrentSong = _.cloneDeep(this.currentSong);
+                this.currentSongStartSeconds = 0;
+            } else {
+                this.currentSongStartSeconds = this.songs[i].length + diff;
+            }
             this.currentSong = this.songs[i];
         }
     }
